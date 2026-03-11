@@ -1,29 +1,44 @@
 import { Server } from "socket.io";
 
 let id = 1;
+let connectedCount = 0; // המונה שלנו
 
 export const createSocket = (httpServer) => {
-    const io = new Server(httpServer, {
-        // ניתן להוסיף הגדרות נוספות על השרת
-        // cors: { origin: '*', methods: ['GET', 'POST'] }
+  const io = new Server(httpServer, {});
+
+  io.on("connection", (socket) => {
+    // כשמישהו מתחבר - מעלים ב-1 ושולחים לכולם
+    connectedCount++;
+    io.emit("update_count", connectedCount);
+
+    socket.userId = id++;
+    socket.emit("user connected", { userId: socket.userId });
+
+    socket.on("update_user_details", (data) => {
+      socket.username = data.username;
+      socket.color = data.color;
     });
 
-    // כשלקוח מתחבר לשרת
-    // socket - נתוני הלקוח שהתחבר כרגע
-    io.on('connection', (socket) => {
-        // ניתן להוסיף נתונים על היוזר הנוכחי בצורה כזו לסוקט
-        socket.userId = id++;
-        console.log(`user ${socket.userId} connected successfully`);
+    socket.on("new message", (newMessage) => {
+      io.emit("send message", {
+        by: socket.username || socket.userId,
+        msg: newMessage,
+        color: socket.color || "#000000",
+      });
+    });
 
-        // שליחת אירוע לקליינט הנוכחי שהתחבר
-        // בשם שאנחנו בחרנו
-        // הקליינט יקבל את המידע רק אם הוא רשום לאירוע
-        socket.emit('user connected', { userId: socket.userId });
+    socket.on("disconnect", () => {
+      // כשמישהו מתנתק - מורידים ב-1 ושולחים לכולם
+      connectedCount--;
+      io.emit("update_count", connectedCount);
 
-        socket.on('new message', (newMessage) => {
-            // שיגור אירוע לכל הלקוחות שמחוברים כרגע
-            // io.emit('send message', `new message added by ${socket.userId}: ${newMessage}`)
-            io.emit('send message', { by: socket.userId, msg: newMessage })
+      if (socket.username) {
+        io.emit("send message", {
+          by: "מערכת",
+          msg: `המשתמש ${socket.username} עזב את הצ'אט`,
+          color: "#888888",
         });
+      }
     });
+  });
 };
