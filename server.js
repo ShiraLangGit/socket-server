@@ -9,9 +9,7 @@ const httpServer = createServer(app);
 // init socketServer on http server
 createSocket(httpServer);
 
-app.get('/', (req, res) => {
-    res.json({ message: 'hello from server' });
-});
+app.use(express.static('public'));
 
 const PORT = process.env.PORT ?? 5000;
 httpServer.listen(PORT, () => {
