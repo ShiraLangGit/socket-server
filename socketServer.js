@@ -1,13 +1,12 @@
 import { Server } from "socket.io";
 
 let id = 1;
-let connectedCount = 0; // המונה שלנו
+let connectedCount = 0; 
 
 export const createSocket = (httpServer) => {
   const io = new Server(httpServer, {});
 
   io.on("connection", (socket) => {
-    // כשמישהו מתחבר - מעלים ב-1 ושולחים לכולם
     connectedCount++;
     io.emit("update_count", connectedCount);
 
@@ -28,7 +27,6 @@ export const createSocket = (httpServer) => {
     });
 
     socket.on("disconnect", () => {
-      // כשמישהו מתנתק - מורידים ב-1 ושולחים לכולם
       connectedCount--;
       io.emit("update_count", connectedCount);
 
